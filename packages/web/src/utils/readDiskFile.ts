@@ -96,3 +96,117 @@ export default async function readDiskFIle(
     }
     return result;
 }
+
+
+/**
+ * 读取本地文件
+ * @param {string} resultType 数据类型, {blob|base64}, 默认blob
+ * @param {string} accept 可选文件类型, 默认 * / *
+ */
+export async function readDiskFiles(
+    resultType = 'blob',
+    accept = '*/*',
+) {
+    const result: ReadFileResult[] | null = await new Promise((resolve) => {
+        const $input = document.createElement('input');
+        $input.style.display = 'none';
+        $input.setAttribute('type', 'file');
+        $input.setAttribute('accept', accept);
+        $input.setAttribute('multiple', 'multiple');
+
+        var loadedFiles: ReadFileResult[] = []
+        // 判断用户是否点击取消, 原生没有提供专门事件, 用hack的方法实现
+        $input.onclick = () => {
+            // @ts-ignore
+            $input.value = null;
+            document.body.onfocus = () => {
+                // onfocus事件会比$input.onchange事件先触发, 因此需要延迟一段时间
+                setTimeout(() => {
+                    if ($input.value.length === 0) {
+                        resolve(null);
+                    }
+                    document.body.onfocus = null;
+                }, 500);
+            };
+        };
+        $input.onchange = (e: Event) => {
+            // @ts-ignore
+            if (e.target.files.length === 0) {
+                resolve(null);
+                return;
+            }
+
+            // @ts-ignore
+            const files = e.target.files
+            var currentIndex = 0 
+            const reader = new FileReader();
+            reader.onloadend = function handleLoad() {
+                if (!this.result) {
+                    resolve(null);
+                    return;
+                }
+
+                debugger
+                // @ts-ignore
+                loadedFiles.push({
+                    filename: files[currentIndex].name,
+                    ext: files[currentIndex].name
+                        .split('.')
+                        .pop()
+                        .toLowerCase(),
+                    type: files[currentIndex].type,
+                    result: this.result,
+                    length:
+                        resultType === 'blob'
+                            ? (this.result as ArrayBuffer).byteLength
+                            : (this.result as string).length,
+                })
+                currentIndex++
+                resolve(loadedFiles);
+            };
+
+            // @ts-ignore
+            for (let i = 0; i < e.target.files.length; i++) {
+                // @ts-ignore
+                const file = e.target.files[i];
+                if (!file) {
+                    return;
+                }
+
+                switch (resultType) {
+                    case 'blob': {
+                        reader.readAsArrayBuffer(file);
+                        break;
+                    }
+                    case 'base64': {
+                        reader.readAsDataURL(file);
+                        break;
+                    }
+                    default: {
+                        reader.readAsArrayBuffer(file);
+                    }
+                }
+            }
+        };
+        $input.click();
+    });
+
+    if (!result) {
+        return null;
+    }
+
+    for (let i = 0; i < result.length; i++) {
+        const item = result[i];
+        debugger
+        if (item && resultType === 'blob') {
+            item.result = new Blob(
+                [new Uint8Array(item.result as ArrayBuffer)],
+                {
+                    type: item.type,
+                },
+            );
+        }
+    }
+
+    return result;
+}

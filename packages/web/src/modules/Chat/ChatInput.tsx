@@ -9,7 +9,7 @@ import config from '@fiora/config/client';
 import { isMobile } from '@fiora/utils/ua';
 import fetch from '../../utils/fetch';
 import voice from '../../utils/voice';
-import readDiskFile, { ReadFileResult } from '../../utils/readDiskFile';
+import readDiskFile, { ReadFileResult,readDiskFiles } from '../../utils/readDiskFile';
 import uploadFile from '../../utils/uploadFile';
 import getRandomHuaji from '../../utils/getRandomHuaji';
 import Style from './ChatInput.less';
@@ -230,6 +230,7 @@ function ChatInput() {
 
         // @ts-ignore
         const ext = image.type.split('/').pop().toLowerCase();
+        // @ts-ignore
         const url = URL.createObjectURL(image.result);
 
         const img = new Image();
@@ -256,7 +257,28 @@ function ChatInput() {
         };
         img.src = url;
     }
+    function sendVideoMessage(video: ReadFileResult) {
 
+    }
+    function multipleSendImageAndVideoMessage(files : ReadFileResult[]) {
+        if (files.length === 0) {
+            return;
+        }
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            debugger;
+            if (file.type.startsWith('image')) {
+                sendImageMessage(file);
+                continue;
+            }
+
+            if (file.type.startsWith('video')) {
+                sendVideoMessage(file);
+                continue;
+            }
+        }
+    }
     async function sendFileMessage(file: ReadFileResult) {
         if (file.length > config.maxFileSize) {
             Message.warning('要发送的文件过大', 3);
@@ -307,6 +329,22 @@ function ChatInput() {
         sendImageMessage(image);
         return null;
     }
+    async function handleMultipleSendImages() {
+        if (!connect) {
+            return Message.error('发送消息失败, 您当前处于离线状态');
+        }
+        const files = await readDiskFiles(
+            'blob',
+            'image/png,image/jpeg,image/gif,video/mp4',
+        );
+
+        if (!files || files.length === 0) {
+            return null;
+        }
+
+        multipleSendImageAndVideoMessage(files);
+        return null;
+    }
     async function sendHuaji() {
         const huaji = getRandomHuaji();
         const id = addSelfMessage('image', huaji);
@@ -338,7 +376,7 @@ function ChatInput() {
 
         switch (key) {
             case 'image': {
-                handleSendImage();
+                handleMultipleSendImages();
                 break;
             }
             case 'huaji': {

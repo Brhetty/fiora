@@ -181,6 +181,9 @@ class Message extends Component<MessageProps, MessageState> {
                     />
                 );
             }
+            // TODO: 样式优化
+            case 'video':
+                return <video src={content}  controls />
             default:
                 return <div className="unknown">不支持的消息类型</div>;
         }

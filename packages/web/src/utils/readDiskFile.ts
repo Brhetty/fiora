@@ -137,55 +137,40 @@ export async function readDiskFiles(
             }
 
             // @ts-ignore
-            const files = e.target.files
-            var currentIndex = 0 
-            const reader = new FileReader();
-            reader.onloadend = function handleLoad() {
-                if (!this.result) {
-                    resolve(null);
-                    return;
-                }
-
-                debugger
-                // @ts-ignore
-                loadedFiles.push({
-                    filename: files[currentIndex].name,
-                    ext: files[currentIndex].name
-                        .split('.')
-                        .pop()
-                        .toLowerCase(),
-                    type: files[currentIndex].type,
-                    result: this.result,
-                    length:
-                        resultType === 'blob'
-                            ? (this.result as ArrayBuffer).byteLength
-                            : (this.result as string).length,
-                })
-                currentIndex++
-                resolve(loadedFiles);
-            };
-
+            var fileNum = e.target.files.length
             // @ts-ignore
             for (let i = 0; i < e.target.files.length; i++) {
                 // @ts-ignore
-                const file = e.target.files[i];
-                if (!file) {
-                    return;
-                }
+                var file = e.target.files[i]
+                // @ts-ignore
+                const readFileAsync = file => new Promise(resolve => {
+                    const reader = new FileReader();
+                    // @ts-ignore
+                    reader.onloadend = evt => resolve(evt.target.result)
+                    reader.readAsArrayBuffer(file);
+                })
 
-                switch (resultType) {
-                    case 'blob': {
-                        reader.readAsArrayBuffer(file);
-                        break;
+                var r = readFileAsync(file)   
+                r.then((result) => {
+                    loadedFiles.push({
+                        filename: file.name,
+                        ext: file.name
+                            .split('.')
+                            .pop()
+                            .toLowerCase(),
+                        type: file.type,
+                        // @ts-ignore
+                        result: result,
+                        length:
+                            resultType === 'blob'
+                                ? (result as ArrayBuffer).byteLength
+                                : (result as string).length,
+                    })
+
+                    if (loadedFiles.length === fileNum) {
+                        resolve(loadedFiles)
                     }
-                    case 'base64': {
-                        reader.readAsDataURL(file);
-                        break;
-                    }
-                    default: {
-                        reader.readAsArrayBuffer(file);
-                    }
-                }
+                })
             }
         };
         $input.click();
@@ -197,7 +182,6 @@ export async function readDiskFiles(
 
     for (let i = 0; i < result.length; i++) {
         const item = result[i];
-        debugger
         if (item && resultType === 'blob') {
             item.result = new Blob(
                 [new Uint8Array(item.result as ArrayBuffer)],

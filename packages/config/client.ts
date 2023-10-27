@@ -3,11 +3,11 @@ import { MB } from '../utils/const';
 export default {
     server:
         process.env.Server ||
-        (process.env.NODE_ENV === 'development' ? '//localhost:9200' : '/'),
+        (process.env.NODE_ENV === 'development' ? '//172.22.14.122:9200' : '/'),
 
     maxImageSize: process.env.MaxImageSize
         ? parseInt(process.env.MaxImageSize, 10)
-        : MB * 5,
+        : MB * 100,
     maxBackgroundImageSize: process.env.MaxBackgroundImageSize
         ? parseInt(process.env.MaxBackgroundImageSize, 10)
         : MB * 5,
@@ -16,7 +16,7 @@ export default {
         : MB * 1.5,
     maxFileSize: process.env.MaxFileSize
         ? parseInt(process.env.MaxFileSize, 10)
-        : MB * 10,
+        : MB * 1000,
 
     // client default system setting
     defaultTheme: process.env.DefaultTheme || 'cool',

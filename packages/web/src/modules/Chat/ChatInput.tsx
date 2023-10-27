@@ -173,7 +173,7 @@ function ChatInput() {
                 tag,
             },
             loading: true,
-            percent: type === 'image' || type === 'file' ? 0 : 100,
+            percent: type === 'image' || type === 'file' || type === 'video'? 0 : 100,
         };
         // @ts-ignore
         action.addLinkmanMessage(focus, message);
@@ -258,7 +258,33 @@ function ChatInput() {
         img.src = url;
     }
     function sendVideoMessage(video: ReadFileResult) {
-
+        // @ts-ignore
+        const ext = video.type.split('/').pop().toLowerCase();
+        // @ts-ignore
+        const url = URL.createObjectURL(video.result);
+        const v = document.createElement('video');
+        v.oncanplay = async () =>{
+            const id = addSelfMessage(
+                'video',
+                `${url}?width=${10}&height=${20}`,
+            );
+            try {
+                const imageUrl = await uploadFile(
+                    video.result as Blob,
+                    `VideoMessage/${selfId}_${Date.now()}.${ext}`,
+                );
+                handleSendMessage(
+                    id,
+                    'video',
+                    `${imageUrl}?width=${v.width}&height=${v.height}`,
+                    focus,
+                );
+            } catch (err) {
+                console.error(err);
+                Message.error('上传视频失败');
+            }
+        };
+        v.src = url
     }
     function multipleSendImageAndVideoMessage(files : ReadFileResult[]) {
         if (files.length === 0) {
@@ -267,7 +293,6 @@ function ChatInput() {
 
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            debugger;
             if (file.type.startsWith('image')) {
                 sendImageMessage(file);
                 continue;
@@ -359,6 +384,7 @@ function ChatInput() {
         if (!file) {
             return;
         }
+        
         sendFileMessage(file);
     }
 
